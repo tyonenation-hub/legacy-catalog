@@ -1,0 +1,6 @@
+{
+  "appId": "com.legacy.catalog",
+  "appName": "LEGACY Catalog",
+  "webDir": "dist",
+  "server": {"androidScheme": "https"}
+}
