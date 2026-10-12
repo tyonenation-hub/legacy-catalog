@@ -1,19 +1,43 @@
 import './style.css';
 import { COLOR_GROUPS, SETTINGS } from './catalog.js';
+import { supabase, supabaseConfigured } from './supabase.js';
 
 const app = document.querySelector('#app');
 let currentSlug = null;
+let liveGroups = structuredClone(COLOR_GROUPS);
 const selectedSizes = new Map();
 
-const groupBySlug = (slug) => COLOR_GROUPS.find(g => g.slug === slug);
-const asset = (path) => path ? `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}` : '';
+const groupBySlug = (slug) => liveGroups.find(g => g.slug === slug);
+const asset = (path) => path ? (/^https?:\/\//.test(path) ? path : `${import.meta.env.BASE_URL}${path.replace(/^\//, '')}`) : '';
 
-function photo(path, label, group, model){
+async function loadCatalog(){
+  if (!supabaseConfigured || !supabase) return;
+  const { data, error } = await supabase
+    .from('catalog_products')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: false });
+  if (error) {
+    console.warn('No se pudo cargar Supabase:', error.message);
+    return;
+  }
+  liveGroups = COLOR_GROUPS.map(group => ({
+    ...group,
+    models: (data || [])
+      .filter(p => p.color_slug === group.slug)
+      .map(p => ({
+        id: p.id,
+        front: p.front_url || '',
+        back: p.back_url || '',
+        sizes: p.sizes || [],
+        stock: p.stock !== false
+      }))
+  }));
+}
+
+function photo(path, label, group){
   if (!path) {
-    return `<button class="photo placeholder" data-placeholder="1" type="button">
-      <span>${label}</span>
-      <small>Agrega la foto en<br>public/productos/${group.slug}/</small>
-    </button>`;
+    return `<div class="photo placeholder"><span>${label}</span><small>Imagen no disponible</small></div>`;
   }
   return `<button class="photo" data-zoom="${asset(path)}" data-label="${label}" type="button">
     <img src="${asset(path)}" alt="Polo ${group.color} - ${label}" loading="lazy">
@@ -33,8 +57,9 @@ function renderHome(){
         <h1>Elige un color.</h1>
         <p>Entra a cada color para ver todos los modelos disponibles.</p>
       </section>
+      ${!supabaseConfigured ? '<div class="setupNotice">Catálogo en modo local. El administrador puede conectar Supabase para cargar modelos directamente.</div>' : ''}
       <section class="colorGrid">
-        ${COLOR_GROUPS.map(g => `
+        ${liveGroups.map(g => `
           <button class="colorCard color-${g.slug}" data-color-open="${g.slug}" type="button">
             <div class="colorVisual"><span class="teeGlyph">T</span></div>
             <div class="colorInfo">
@@ -69,7 +94,7 @@ function renderColor(slug){
         <p>${group.models.length} ${group.models.length === 1 ? 'modelo disponible' : 'modelos disponibles'}</p>
       </section>
       <section class="modelGrid">
-        ${group.models.map((m, index) => modelCard(group, m, index)).join('') || '<p class="empty">Aún no hay modelos cargados.</p>'}
+        ${group.models.map(m => modelCard(group, m)).join('') || '<p class="empty">Aún no hay modelos cargados.</p>'}
       </section>
     </main>
     <div id="modal"></div>`;
@@ -77,12 +102,12 @@ function renderColor(slug){
   bindColorView(group);
 }
 
-function modelCard(group, model, index){
+function modelCard(group, model){
   const selected = selectedSizes.get(model.id) || model.sizes?.[0] || '';
   return `<article class="modelCard">
     <div class="photoPair">
-      ${photo(model.front, 'Frente', group, model)}
-      ${photo(model.back, 'Espalda', group, model)}
+      ${photo(model.front, 'Frente', group)}
+      ${photo(model.back, 'Espalda', group)}
     </div>
     <div class="modelBody">
       <div class="availability ${model.stock ? 'available' : 'soldout'}">
@@ -121,7 +146,7 @@ function sendWhatsApp(group, modelId){
   const model = group.models.find(m => m.id === modelId);
   if (!model) return;
   if (!SETTINGS.whatsapp) {
-    alert('Configura tu número de WhatsApp en src/catalog.js');
+    alert('El número de WhatsApp todavía no está configurado.');
     return;
   }
   const size = selectedSizes.get(modelId) || model.sizes?.[0] || 'Consultar';
@@ -154,4 +179,5 @@ if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(() => {}));
 }
 
+await loadCatalog();
 renderHome();

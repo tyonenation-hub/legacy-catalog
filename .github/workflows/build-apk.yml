@@ -18,6 +18,10 @@ jobs:
       - name: Install dependencies
         run: npm install
       - name: Build web app
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+          VITE_WHATSAPP_NUMBER: ${{ secrets.VITE_WHATSAPP_NUMBER }}
         run: npm run build
       - name: Add Android platform
         run: npx cap add android
