@@ -114,5 +114,5 @@ function openList(ids,title){
   modal.querySelectorAll('[data-view2]').forEach(b=>b.onclick=()=>openProduct(b.dataset.view2));
 }
 
-if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(()=>{})); }
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>navigator.serviceWorker.register(`${import.meta.env.BASE_URL}sw.js`).catch(()=>{})); }
 render();
