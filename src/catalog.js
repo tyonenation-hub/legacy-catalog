@@ -1,44 +1,63 @@
 export const SETTINGS = {
   brand: 'LEGACY',
   subtitle: 'Streetwear Catalog',
-  whatsapp: '', // escribe aquí tu número con código de país, sin + ni espacios
-  currency: 'S/',
-  instagram: '',
+  whatsapp: '', // Escribe tu número con código de país, sin + ni espacios. Ej.: 519XXXXXXXX
   facebook: 'legacy - ropa streetwear'
 };
 
-export const PRODUCTS = [
+// Carga tus fotos en public/productos/<color>/ y reemplaza las rutas de ejemplo.
+// No se muestra nombre de diseño ni precio al cliente.
+export const COLOR_GROUPS = [
   {
-    id: 'legacy-001',
-    name: 'LEGACY 001',
-    category: 'Oversize',
-    price: null,
-    featured: true,
-    colors: ['Negro', 'Blanco', 'Arena', 'Verde militar'],
-    sizes: ['S', 'M', 'L', 'XL'],
-    description: 'Polo oversize streetwear con estampado DTF. Diseño de colección LEGACY.',
-    images: []
+    color: 'Negro',
+    slug: 'negro',
+    models: [
+      {
+        id: 'negro-01',
+        front: '', // 'productos/negro/modelo01-frente.webp'
+        back: '',  // 'productos/negro/modelo01-espalda.webp'
+        sizes: ['S', 'M', 'L', 'XL'],
+        stock: true
+      }
+    ]
   },
   {
-    id: 'legacy-002',
-    name: 'LEGACY 002',
-    category: 'Oversize',
-    price: null,
-    featured: true,
-    colors: ['Negro', 'Blanco', 'Arena', 'Verde militar'],
-    sizes: ['S', 'M', 'L', 'XL'],
-    description: 'Polo oversize de estilo urbano. Disponible en la paleta principal de LEGACY.',
-    images: []
+    color: 'Blanco',
+    slug: 'blanco',
+    models: [
+      {
+        id: 'blanco-01',
+        front: '',
+        back: '',
+        sizes: ['S', 'M', 'L', 'XL'],
+        stock: true
+      }
+    ]
   },
   {
-    id: 'legacy-003',
-    name: 'LEGACY 003',
-    category: 'Oversize',
-    price: null,
-    featured: false,
-    colors: ['Negro', 'Blanco', 'Arena', 'Verde militar'],
-    sizes: ['S', 'M', 'L', 'XL'],
-    description: 'Diseño gráfico LEGACY preparado para colección streetwear.',
-    images: []
+    color: 'Arena',
+    slug: 'arena',
+    models: [
+      {
+        id: 'arena-01',
+        front: '',
+        back: '',
+        sizes: ['S', 'M', 'L', 'XL'],
+        stock: true
+      }
+    ]
+  },
+  {
+    color: 'Verde militar',
+    slug: 'verde-militar',
+    models: [
+      {
+        id: 'verde-militar-01',
+        front: '',
+        back: '',
+        sizes: ['S', 'M', 'L', 'XL'],
+        stock: true
+      }
+    ]
   }
 ];
