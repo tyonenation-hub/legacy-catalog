@@ -41,7 +41,7 @@ function photo(path, label, group){
   if (!path) {
     return `<div class="photo placeholder"><span>${label}</span><small>Imagen no disponible</small></div>`;
   }
-  return `<button class="photo" data-zoom="${asset(path)}" data-label="${label}" type="button">
+  return `<button class="photo" data-zoom="${asset(path)}" data-label="${label}" data-color="${group.color}" type="button">
     <img src="${asset(path)}" alt="Polo ${group.color} - ${label}" loading="lazy">
     <span class="photoTag">${label}</span>
   </button>`;
@@ -51,6 +51,12 @@ function renderHome(category=currentCategory){
   currentSlug = null;
   currentCategory = category;
   const categoryLabel = currentCategory === 'anime' ? 'ANIME' : 'STREETWEAR';
+  const animeItems = liveGroups.flatMap(group =>
+    group.models
+      .filter(m => (m.category || 'streetwear') === 'anime')
+      .map(model => ({ group, model }))
+  );
+
   app.innerHTML = `
     <header class="topbar">
       <div><div class="brand">${SETTINGS.brand}</div><div class="sub">${SETTINGS.subtitle}</div></div>
@@ -59,7 +65,7 @@ function renderHome(category=currentCategory){
       <section class="hero compactHero">
         <p class="eyebrow">CATÁLOGO LEGACY</p>
         <h1>Elige una colección.</h1>
-        <p>Selecciona Streetwear o Anime y luego el color que quieres ver.</p>
+        <p>${currentCategory === 'anime' ? 'Todos los diseños Anime disponibles en un solo lugar.' : 'Selecciona Streetwear y luego el color que quieres ver.'}</p>
       </section>
       <section class="categoryTabs" aria-label="Colecciones">
         <button class="categoryTab ${currentCategory === 'streetwear' ? 'active' : ''}" data-category="streetwear" type="button">STREETWEAR</button>
@@ -67,21 +73,31 @@ function renderHome(category=currentCategory){
       </section>
       ${!supabaseConfigured ? '<div class="setupNotice">Catálogo en modo local. El administrador puede conectar Supabase para cargar modelos directamente.</div>' : ''}
       <div class="collectionLabel">${categoryLabel}</div>
-      <section class="colorGrid">
-        ${liveGroups.map(g => {
-          const count = g.models.filter(m => (m.category || 'streetwear') === currentCategory).length;
-          return `
-          <button class="colorCard color-${g.slug}" data-color-open="${g.slug}" type="button">
-            <div class="colorVisual"><span class="teeGlyph">T</span></div>
-            <div class="colorInfo">
-              <strong>${g.color}</strong>
-              <span>${count} ${count === 1 ? 'modelo' : 'modelos'}</span>
-            </div>
-            <span class="arrow">›</span>
-          </button>`;
-        }).join('')}
-      </section>
-      <p class="homeNote">Toca un color para ver los modelos de ${categoryLabel.toLowerCase()}.</p>
+      ${currentCategory === 'anime' ? `
+        <section class="colorHeader animeHeader">
+          <h1>Anime</h1>
+          <p>${animeItems.length} ${animeItems.length === 1 ? 'modelo disponible' : 'modelos disponibles'}</p>
+        </section>
+        <section class="modelGrid">
+          ${animeItems.map(({group, model}) => modelCard(group, model)).join('') || '<p class="empty">Aún no hay modelos Anime cargados.</p>'}
+        </section>
+      ` : `
+        <section class="colorGrid">
+          ${liveGroups.map(g => {
+            const count = g.models.filter(m => (m.category || 'streetwear') === 'streetwear').length;
+            return `
+            <button class="colorCard color-${g.slug}" data-color-open="${g.slug}" type="button">
+              <div class="colorVisual"><span class="teeGlyph">T</span></div>
+              <div class="colorInfo">
+                <strong>${g.color}</strong>
+                <span>${count} ${count === 1 ? 'modelo' : 'modelos'}</span>
+              </div>
+              <span class="arrow">›</span>
+            </button>`;
+          }).join('')}
+        </section>
+        <p class="homeNote">Toca un color para ver los modelos de streetwear.</p>
+      `}
     </main>
     <div id="modal"></div>`;
 
@@ -91,8 +107,8 @@ function renderHome(category=currentCategory){
   document.querySelectorAll('[data-color-open]').forEach(btn => {
     btn.addEventListener('click', () => renderColor(btn.dataset.colorOpen));
   });
+  if(currentCategory === 'anime') bindCatalogCards();
 }
-
 function renderColor(slug){
   const group = groupBySlug(slug);
   if (!group) return renderHome(currentCategory);
@@ -139,7 +155,11 @@ function modelCard(group, model){
   </article>`;
 }
 
-function bindColorView(group){
+function findGroupForModel(modelId){
+  return liveGroups.find(g => g.models.some(m => m.id === modelId));
+}
+
+function bindCatalogCards(group=null){
   document.querySelector('[data-back]')?.addEventListener('click', () => renderHome(currentCategory));
 
   document.querySelectorAll('[data-size]').forEach(btn => {
@@ -151,14 +171,20 @@ function bindColorView(group){
   });
 
   document.querySelectorAll('[data-order]').forEach(btn => {
-    btn.addEventListener('click', () => sendWhatsApp(group, btn.dataset.order));
+    btn.addEventListener('click', () => {
+      const productGroup = group || findGroupForModel(btn.dataset.order);
+      if(productGroup) sendWhatsApp(productGroup, btn.dataset.order);
+    });
   });
 
   document.querySelectorAll('[data-zoom]').forEach(btn => {
-    btn.addEventListener('click', () => openImage(btn.dataset.zoom, btn.dataset.label, group.color));
+    btn.addEventListener('click', () => openImage(btn.dataset.zoom, btn.dataset.label, btn.dataset.color || group?.color || 'LEGACY'));
   });
 }
 
+function bindColorView(group){
+  bindCatalogCards(group);
+}
 function sendWhatsApp(group, modelId){
   const model = group.models.find(m => m.id === modelId);
   if (!model) return;
