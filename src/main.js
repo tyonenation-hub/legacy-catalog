@@ -4,6 +4,7 @@ import { supabase, supabaseConfigured } from './supabase.js';
 
 const app = document.querySelector('#app');
 let currentSlug = null;
+let currentCategory = 'streetwear';
 let liveGroups = structuredClone(COLOR_GROUPS);
 const selectedSizes = new Map();
 
@@ -30,7 +31,8 @@ async function loadCatalog(){
         front: p.front_url || '',
         back: p.back_url || '',
         sizes: p.sizes || [],
-        stock: p.stock !== false
+        stock: p.stock !== false,
+        category: p.category || 'streetwear'
       }))
   }));
 }
@@ -45,8 +47,10 @@ function photo(path, label, group){
   </button>`;
 }
 
-function renderHome(){
+function renderHome(category=currentCategory){
   currentSlug = null;
+  currentCategory = category;
+  const categoryLabel = currentCategory === 'anime' ? 'ANIME' : 'STREETWEAR';
   app.innerHTML = `
     <header class="topbar">
       <div><div class="brand">${SETTINGS.brand}</div><div class="sub">${SETTINGS.subtitle}</div></div>
@@ -54,25 +58,36 @@ function renderHome(){
     <main class="shell">
       <section class="hero compactHero">
         <p class="eyebrow">CATÁLOGO LEGACY</p>
-        <h1>Elige un color.</h1>
-        <p>Entra a cada color para ver todos los modelos disponibles.</p>
+        <h1>Elige una colección.</h1>
+        <p>Selecciona Streetwear o Anime y luego el color que quieres ver.</p>
+      </section>
+      <section class="categoryTabs" aria-label="Colecciones">
+        <button class="categoryTab ${currentCategory === 'streetwear' ? 'active' : ''}" data-category="streetwear" type="button">STREETWEAR</button>
+        <button class="categoryTab ${currentCategory === 'anime' ? 'active' : ''}" data-category="anime" type="button">ANIME</button>
       </section>
       ${!supabaseConfigured ? '<div class="setupNotice">Catálogo en modo local. El administrador puede conectar Supabase para cargar modelos directamente.</div>' : ''}
+      <div class="collectionLabel">${categoryLabel}</div>
       <section class="colorGrid">
-        ${liveGroups.map(g => `
+        ${liveGroups.map(g => {
+          const count = g.models.filter(m => (m.category || 'streetwear') === currentCategory).length;
+          return `
           <button class="colorCard color-${g.slug}" data-color-open="${g.slug}" type="button">
             <div class="colorVisual"><span class="teeGlyph">T</span></div>
             <div class="colorInfo">
               <strong>${g.color}</strong>
-              <span>${g.models.length} ${g.models.length === 1 ? 'modelo' : 'modelos'}</span>
+              <span>${count} ${count === 1 ? 'modelo' : 'modelos'}</span>
             </div>
             <span class="arrow">›</span>
-          </button>`).join('')}
+          </button>`;
+        }).join('')}
       </section>
-      <p class="homeNote">Toca un color para ver sus modelos.</p>
+      <p class="homeNote">Toca un color para ver los modelos de ${categoryLabel.toLowerCase()}.</p>
     </main>
     <div id="modal"></div>`;
 
+  document.querySelectorAll('[data-category]').forEach(btn => {
+    btn.addEventListener('click', () => renderHome(btn.dataset.category));
+  });
   document.querySelectorAll('[data-color-open]').forEach(btn => {
     btn.addEventListener('click', () => renderColor(btn.dataset.colorOpen));
   });
@@ -80,21 +95,23 @@ function renderHome(){
 
 function renderColor(slug){
   const group = groupBySlug(slug);
-  if (!group) return renderHome();
+  if (!group) return renderHome(currentCategory);
   currentSlug = slug;
+  const models = group.models.filter(m => (m.category || 'streetwear') === currentCategory);
+  const categoryLabel = currentCategory === 'anime' ? 'ANIME' : 'STREETWEAR';
 
   app.innerHTML = `
     <header class="topbar">
-      <button class="backBtn" data-back type="button">‹ Colores</button>
-      <div class="headerTitle"><div class="brand">${group.color}</div><div class="sub">MODELOS DISPONIBLES</div></div>
+      <button class="backBtn" data-back type="button">‹ ${categoryLabel}</button>
+      <div class="headerTitle"><div class="brand">${group.color}</div><div class="sub">${categoryLabel} · MODELOS DISPONIBLES</div></div>
     </header>
     <main class="shell">
       <section class="colorHeader">
         <h1>${group.color}</h1>
-        <p>${group.models.length} ${group.models.length === 1 ? 'modelo disponible' : 'modelos disponibles'}</p>
+        <p>${models.length} ${models.length === 1 ? 'modelo disponible' : 'modelos disponibles'}</p>
       </section>
       <section class="modelGrid">
-        ${group.models.map(m => modelCard(group, m)).join('') || '<p class="empty">Aún no hay modelos cargados.</p>'}
+        ${models.map(m => modelCard(group, m)).join('') || '<p class="empty">Aún no hay modelos cargados en esta colección.</p>'}
       </section>
     </main>
     <div id="modal"></div>`;
@@ -123,7 +140,7 @@ function modelCard(group, model){
 }
 
 function bindColorView(group){
-  document.querySelector('[data-back]')?.addEventListener('click', renderHome);
+  document.querySelector('[data-back]')?.addEventListener('click', () => renderHome(currentCategory));
 
   document.querySelectorAll('[data-size]').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -150,12 +167,13 @@ function sendWhatsApp(group, modelId){
     return;
   }
   const size = selectedSizes.get(modelId) || model.sizes?.[0] || 'Consultar';
-  const backPhoto = asset(model.back || model.front);
+  const photoUrl = asset(model.back || model.front || '');
   const text = [
     'Hola, quiero consultar por este polo de LEGACY.',
+    `Colección: ${currentCategory === 'anime' ? 'Anime' : 'Streetwear'}`,
     `Color: ${group.color}`,
     `Talla: ${size}`,
-    backPhoto ? `Foto del diseño (espalda): ${backPhoto}` : '',
+    photoUrl ? `Foto del diseño (espalda): ${photoUrl}` : '',
     '¿Está disponible?'
   ].filter(Boolean).join('\n');
   window.open(`https://wa.me/${SETTINGS.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');

@@ -2,6 +2,7 @@ import './style.css';
 import { supabase, supabaseConfigured, PRODUCT_BUCKET } from './supabase.js';
 
 const root = document.querySelector('#admin-app');
+const CATEGORIES = [['streetwear','Streetwear'], ['anime','Anime']];
 const COLORS = [
   ['negro','Negro'], ['blanco','Blanco'], ['arena','Arena'], ['verde-militar','Verde militar']
 ];
@@ -73,6 +74,9 @@ function adminPage(){
     <section class="adminCard">
       <h1 id="form-title">Publicar modelo</h1>
       <form id="product-form" class="adminForm">
+        <label>Colección
+          <select name="category" required>${CATEGORIES.map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}</select>
+        </label>
         <label>Color
           <select name="color" required>${COLORS.map(([v,l]) => `<option value="${v}">${l}</option>`).join('')}</select>
         </label>
@@ -110,13 +114,14 @@ function adminPage(){
 
 function productRow(p){
   const color = COLORS.find(([v]) => v === p.color_slug)?.[1] || p.color_slug;
+  const category = CATEGORIES.find(([v]) => v === (p.category || 'streetwear'))?.[1] || 'Streetwear';
   return `<article class="adminProductRow">
     <div class="adminThumbPair">
       ${p.front_url ? `<img src="${esc(p.front_url)}" alt="Frente">` : '<div></div>'}
       ${p.back_url ? `<img src="${esc(p.back_url)}" alt="Espalda">` : '<div></div>'}
     </div>
     <div class="adminProductInfo">
-      <strong>${esc(color)}</strong>
+      <strong>${esc(category)} · ${esc(color)}</strong>
       <span>${(p.sizes || []).join(' · ') || 'Sin tallas'}</span>
       <small class="${p.stock ? 'availableText' : 'soldText'}">${p.stock ? 'Disponible' : 'Agotado'}</small>
     </div>
@@ -147,6 +152,7 @@ async function saveProduct(e){
   const form = e.currentTarget;
   const fd = new FormData(form);
   const id = fd.get('edit-id') || crypto.randomUUID();
+  const category = fd.get('category') || 'streetwear';
   const color = fd.get('color');
   const sizes = fd.getAll('sizes');
   if (!sizes.length) return status('Selecciona al menos una talla.', 'error');
@@ -156,7 +162,7 @@ async function saveProduct(e){
   try {
     const front = await uploadFile(fd.get('front'), color, 'front', id) || current?.front_url || '';
     const back = await uploadFile(fd.get('back'), color, 'back', id) || current?.back_url || '';
-    const payload = { id, color_slug:color, front_url:front, back_url:back, sizes, stock:fd.get('stock') === 'on' };
+    const payload = { id, category, color_slug:color, front_url:front, back_url:back, sizes, stock:fd.get('stock') === 'on' };
     const { error } = await supabase.from('catalog_products').upsert(payload);
     if (error) throw error;
     await loadProducts();
@@ -168,6 +174,7 @@ function startEdit(id){
   const p = products.find(x => x.id === id); if (!p) return;
   editingId = id;
   const f = document.querySelector('#product-form');
+  f.elements['category'].value = p.category || 'streetwear';
   f.elements['color'].value = p.color_slug;
   f.elements['edit-id'].value = id;
   f.elements['stock'].checked = !!p.stock;
