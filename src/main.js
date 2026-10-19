@@ -150,12 +150,12 @@ function sendWhatsApp(group, modelId){
     return;
   }
   const size = selectedSizes.get(modelId) || model.sizes?.[0] || 'Consultar';
-  const photoUrl = asset(model.front || model.back || '');
+  const backPhoto = asset(model.back || model.front);
   const text = [
     'Hola, quiero consultar por este polo de LEGACY.',
     `Color: ${group.color}`,
     `Talla: ${size}`,
-    photoUrl ? `Foto del polo: ${photoUrl}` : '',
+    backPhoto ? `Foto del diseño (espalda): ${backPhoto}` : '',
     '¿Está disponible?'
   ].filter(Boolean).join('\n');
   window.open(`https://wa.me/${SETTINGS.whatsapp}?text=${encodeURIComponent(text)}`, '_blank');
