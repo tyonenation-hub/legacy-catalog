@@ -4,7 +4,7 @@ import { supabase, supabaseConfigured, PRODUCT_BUCKET } from './supabase.js';
 const root = document.querySelector('#admin-app');
 const CATEGORIES = [['streetwear','Streetwear'], ['anime','Anime']];
 const COLORS = [
-  ['negro','Negro'], ['blanco','Blanco'], ['arena','Arena'], ['verde-militar','Verde militar']
+  ['negro','Negro'], ['blanco','Perla'], ['arena','Arena'], ['verde-militar','Verde militar'], ['rojo','Rojo'], ['azul-electrico','Azul eléctrico']
 ];
 const ALL_SIZES = ['S','M','L','XL','XXL'];
 let editingId = null;

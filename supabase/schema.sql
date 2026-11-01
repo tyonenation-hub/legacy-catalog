@@ -5,7 +5,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.catalog_products (
   id uuid primary key default gen_random_uuid(),
-  color_slug text not null check (color_slug in ('negro','blanco','arena','verde-militar')),
+  color_slug text not null check (color_slug in ('negro','blanco','arena','verde-militar','rojo','azul-electrico')),
   front_url text not null default '',
   back_url text not null default '',
   sizes text[] not null default '{}',

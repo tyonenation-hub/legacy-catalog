@@ -7,7 +7,9 @@ export const SETTINGS = {
 
 export const COLOR_GROUPS = [
   { color: 'Negro', slug: 'negro', models: [] },
-  { color: 'Blanco', slug: 'blanco', models: [] },
+  { color: 'Perla', slug: 'blanco', models: [] },
   { color: 'Arena', slug: 'arena', models: [] },
-  { color: 'Verde militar', slug: 'verde-militar', models: [] }
+  { color: 'Verde militar', slug: 'verde-militar', models: [] },
+  { color: 'Rojo', slug: 'rojo', models: [] },
+  { color: 'Azul eléctrico', slug: 'azul-electrico', models: [] }
 ];
